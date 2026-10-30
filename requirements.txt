@@ -1,0 +1,11 @@
+attrs==26.1.0
+certifi==2026.10.23
+cffi==2.1.1
+eccodes==2.50.0
+eccodeslib==2.50.0.33
+eckitlib==2.5.0.33
+findlibs==0.1.3
+h5py==3.16.0
+numpy==2.5.4
+pycparser==3.12
+pyproj==3.8.0

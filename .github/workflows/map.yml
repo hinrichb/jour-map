@@ -1,0 +1,80 @@
+# Rebuilds the map every ten minutes and publishes it with GitHub Pages.
+# The state (finished forecast pieces, radar frames already read) is carried
+# from run to run in the Actions cache, so a run only fetches what is new.
+name: map
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write
+
+concurrency:
+  group: map
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore state
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: state
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+
+      - run: python build.py --state state --site site --models 3
+
+      - name: Keep state
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: state
+          key: state-${{ github.run_id }}
+
+      - uses: actions/configure-pages@v6.0.0
+      - uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: site
+          retention-days: 1
+      - id: deploy
+        uses: actions/deploy-pages@v5.0.1
+
+      # Scheduled workflows stop after sixty days without a commit; turning
+      # this one on again once a day keeps it going.
+      - name: Stay scheduled
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%H%M)" \< "0010" ]; then
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/map.yml/enable" || true
+          fi
+
+      # Old states are only in the way; the newest few are kept.
+      - name: Tidy the cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/caches?key=state-&sort=created_at&direction=desc&per_page=100" \
+            --jq '.actions_caches[3:][].id' | while read id; do
+              gh api -X DELETE "repos/${{ github.repository }}/actions/caches/$id" || true
+            done
