@@ -40,6 +40,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import warnings
 import zlib
 
 import eccodes
@@ -640,4 +641,10 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    status = main() or 0
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # ecCodes can crash while Python tears down after the work is done; the
+    # site is written by then, so leave without the teardown.
+    os._exit(status)
