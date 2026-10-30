@@ -20,7 +20,7 @@ Layers: rain (mm/h), temperature (°C), wind (km/h), cloud cover (%).
 
 ## Sources
 
-Deutscher Wetterdienst (CC BY 4.0), MeteoSwiss ("Source: MeteoSwiss"), NOAA (public domain).
+Deutscher Wetterdienst (CC BY 4.0), MeteoSwiss ("Source: MeteoSwiss"), NOAA (public domain). The data is changed only in form: radars are moved onto latitude-longitude grids, rain is turned from totals into hourly rates, wind speed is worked out from its components, and every value is rounded to one byte as in the table above.
 
 ## Run locally
 
